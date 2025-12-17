@@ -10,7 +10,7 @@ import wishlistRoutes from "./routes/wishlistRoutes";
 import addressRoutes from "./routes/addressRoutes";
 import userRoutes from "./routes/userRoutes";
 import orderRoutes from "./routes/orderRoutes";
-import passport from "../backend/controllers/strategy/googlestrategy";
+import passport from "./controllers/strategy/googlestrategy";
 import brandRoutes from "./routes/brandRoutes";
 import colorRoutes from "./routes/colorRoutes";
 import categoryRoutes from "./routes/categoryRoutes";
