@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -19,20 +19,9 @@ import {
 } from "@/components/ui/dialog";
 import Spinner from "@/lib/Spinner";
 import { Address } from "@/lib/types/type";
-import {
-  useAddToCartMutation,
-  useGetCartQuery,
-  useRemoveFromCartMutation,
-} from "@/store/cartApi";
-import {
-  useAddToWishlistMutation,
-  useRemoveFromWishlistMutation,
-} from "@/store/wishlistApi";
-import {
-  useCreateOrUpdateOrderMutation,
-  useCreateRazorpayPaymentMutation,
-  useGetOrderByIdQuery,
-} from "@/store/orderAPi";
+import { cartApi, useAddToCartMutation, useGetCartQuery, useRemoveFromCartMutation } from "@/store/cartApi";
+import { useCreateOrUpdateOrderMutation, useCreateRazorpayPaymentMutation, useGetOrderByIdQuery } from "@/store/orderAPi";
+
 import { clearCart, setCart } from "@/store/slice/cartSlice";
 import {
   resetCheckout,
@@ -44,45 +33,27 @@ import {
   addToWishlistAction,
   removedFromWishlistAction,
 } from "@/store/slice/wishlistSlice";
-import { RootState } from "@/store/store";
+import { persistor, RootState } from "@/store/store";
+import { useAddToWishlistMutation, useRemoveFromWishlistMutation } from "@/store/wishlistApi";
 import { ChevronRight, CreditCard, MapPin, ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
-// Window interface for Razorpay
 declare global {
   interface Window {
     Razorpay: any;
   }
 }
 
-// Razorpay response from checkout
 interface RazorpayResponse {
   razorpay_payment_id: string;
   razorpay_order_id: string;
   razorpay_signature: string;
 }
-
-// Payment details stored in order
-interface PaymentDetails {
-  razorpay_payment_id: string;
-  razorpay_order_id: string;
-  razorpay_signature: string;
-}
-
-// Order type from backend
-interface Order {
-  _id: string;
-  items: any[];
-  totalAmount: number;
-  shippingAddress?: Address;
-  paymentDetails?: PaymentDetails;
-  paymentStatus?: string;
-}
-
 const Page = () => {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -90,62 +61,57 @@ const Page = () => {
   const { orderId, step } = useSelector((state: RootState) => state.checkout);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const { data: cartData, isLoading: isCartLoading } = useGetCartQuery(
-    {},
-    { skip: true }
-  );
+  const { data: cartData, isLoading: isCartLoading } = useGetCartQuery({}, { skip: true });
   const [removeCartMutation] = useRemoveFromCartMutation();
   const [addToWishlistMutation] = useAddToWishlistMutation();
   const [removeFromWishlistMutation] = useRemoveFromWishlistMutation();
   const wishlist = useSelector((state: RootState) => state.wishlist.items);
   const cart = useSelector((state: RootState) => state.cart);
   const [createOrUpdateOrder] = useCreateOrUpdateOrderMutation();
-  const [createRazorpayPayment] = useCreateRazorpayPaymentMutation();
-  const [addToCart] = useAddToCartMutation();
-  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-
-  const { data: orderData } = useGetOrderByIdQuery<{ success: boolean; data: Order }>(
-    orderId || "",
-    { skip: !orderId }
+  const { data: orderData, isLoading: isOrderLoading } = useGetOrderByIdQuery(
+    orderId || ""
   );
-  const order: Order | undefined = orderData?.data;
+  const [createRazorpayPayment] = useCreateRazorpayPaymentMutation();
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const orderIdi = useSelector((state: RootState) => state.checkout.orderId);
 
-  // Update selected address from order
+  const [addToCart] = useAddToCartMutation(); // ✅ Add this line
+
   useEffect(() => {
-    if (order?.shippingAddress) {
-      setSelectedAddress(order.shippingAddress);
+    if (orderData && orderData.shippingAddress) {
+      setSelectedAddress(orderData.shippingAddress);
     }
-  }, [order]);
+  }, [orderData]);
 
-  // Show address dialog if step is "address" but no selectedAddress
   useEffect(() => {
     if (step === "address" && !selectedAddress) {
       setShowAddressDialog(true);
     }
   }, [step, selectedAddress]);
 
-  // Set cart from fetched data
   useEffect(() => {
     if (cartData?.success && cartData?.data) {
       dispatch(setCart(cartData.data));
+      // dispatch(clearCart());
+      //         dispatch(resetCheckout());
     }
   }, [cartData, dispatch]);
 
-  // Remove item from cart
   const handleRemoveItem = async (productId: string) => {
     try {
       const result = await removeCartMutation({ productId }).unwrap();
       if (result.success && result.data) {
         dispatch(setCart(result.data));
-        toast.success(result.success || "Item removed successfully");
+        // dispatch(resetCheckout())
+        // dispatch(clearCart())
+        toast.success(result.success || "Item Removed successfully");
       }
-    } catch {
-      toast.error("Failed to remove cart item");
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to Remove cart ");
     }
   };
 
-  // Add/remove wishlist
   const handleAddToWishlist = async (productId: string) => {
     try {
       const isWishlist = wishlist.some((item) =>
@@ -155,20 +121,26 @@ const Page = () => {
       if (isWishlist) {
         const result = await removeFromWishlistMutation(productId).unwrap();
         dispatch(removedFromWishlistAction(productId));
-        if (result.success) toast.success(result.message || "Removed");
+        if (result.success) {
+          toast.success(result.message || "Removed from Wishlist");
+        } else {
+          throw new Error(result.error || "Failed to remove from Wislist");
+        }
       } else {
         const result = await addToWishlistMutation({ productId }).unwrap();
         if (result.success) {
           dispatch(addToWishlistAction(result.data));
-          toast.success(result.message || "Added");
+          toast.success(result.message || "Added to Wishlist");
+        } else {
+          throw new Error(result.error || "Failed to add to error");
         }
       }
     } catch (error: any) {
-      toast.error(error?.data?.message || "Something went wrong");
+      const errormessage = error?.data?.message;
+      toast.error(errormessage || "Something went wrong");
     }
   };
 
-  // Update cart quantity
   const handleUpdateQuantity = async (productId: string, newQty: number) => {
     if (newQty <= 0) {
       handleRemoveItem(productId);
@@ -176,19 +148,24 @@ const Page = () => {
     }
 
     try {
-      const result = await addToCart({ productId, quantity: newQty }).unwrap();
+      const result = await addToCart({
+        productId,
+        quantity: newQty,
+      }).unwrap();
+
       if (result.success && result.data) {
         dispatch(setCart(result.data));
         toast.success("Cart updated");
       }
-    } catch {
+    } catch (error) {
       toast.error("Failed to update quantity");
     }
   };
 
-  const handleOpenLogin = () => dispatch(toggleLoginDialog());
+  const handleOpenLogin = () => {
+    dispatch(toggleLoginDialog());
+  };
 
-  // Cart totals
   const totalAmount = cart.items.reduce(
     (acc, item) => acc + item.product.finalPrice * item.quantity,
     0
@@ -198,41 +175,52 @@ const Page = () => {
     0
   );
   const totalDiscount = totalOriginalAmount - totalAmount;
-
+  // const shippingCharge = cart.items.map((item) => item.product.shippingCharges.toLowerCase() == 'free' ? 0 : parseFloat(item.product.shippingCharges) || 0);
   const shippingCharge = cart.items
-    .filter((item) => item.product.shippingCharges)
+    .filter((item) => item?.product?.shippingCharges)
     .map((item) => {
       const shipping = item.product.shippingCharges;
       if (typeof shipping === "string") {
-        return shipping.toLowerCase() === "free" ? 0 : parseFloat(shipping) || 0;
+        return shipping.toLowerCase() === "free"
+          ? 0
+          : parseFloat(shipping) || 0;
       }
       return parseFloat(shipping) || 0;
     });
+
   const maximumShippingCharges = Math.max(...shippingCharge, 0);
+
   const finalAmount = totalAmount + maximumShippingCharges;
 
-  // Proceed to next step
   const handleProceedToCheckout = async () => {
     if (step === "cart") {
       try {
         const result = await createOrUpdateOrder({
+          // updates: {
           items: cart.items,
           totalAmount: finalAmount,
-          shippingAddress: selectedAddress?._id,
+          shippingAddress: selectedAddress?._id, // Send ObjectId if exists
+          // },
         }).unwrap();
-
         if (result.success) {
           toast.success("Order created successfully");
           dispatch(setOrderId(result.data._id));
           dispatch(setCheckoutStep("address"));
+        } else {
+          throw new Error(result.error);
         }
-      } catch {
+      } catch (error) {
         toast.error("Failed to create order");
       }
     } else if (step === "address") {
-      if (selectedAddress) dispatch(setCheckoutStep("payment"));
-      else setShowAddressDialog(true);
-    } else if (step === "payment") handlePayment();
+      if (selectedAddress) {
+        dispatch(setCheckoutStep("payment"));
+      } else {
+        setShowAddressDialog(true);
+      }
+    } else if (step === "payment") {
+      handlePayment();
+    }
   };
 
   const handleSelectAddress = async (address: Address) => {
@@ -240,26 +228,32 @@ const Page = () => {
     setShowAddressDialog(false);
     if (orderId) {
       try {
-        await createOrUpdateOrder({ orderId, shippingAddress: address._id }).unwrap();
+        await createOrUpdateOrder({
+          // updates: { 
+          orderId, shippingAddress: address
+          //  },
+        }).unwrap();
         toast.success("Address updated successfully");
-      } catch {
+      } catch (error) {
+        console.log(error);
         toast.error("Failed to update address");
       }
     }
   };
 
-  // Razorpay payment
   const handlePayment = async () => {
     if (!orderId) {
-      toast.error("No order found");
+      toast.error("No order found, please try adding item and the try");
       return;
     }
     setIsProcessing(true);
     try {
-      const { data } = await createRazorpayPayment({ orderId });
-      const razorpayOrder = data?.data?.order;
-      if (!razorpayOrder) throw new Error("Invalid payment data");
+      const { data, error } = await createRazorpayPayment({ orderId });
 
+      if (!data || !data.data || !data.data.order) {
+        throw new Error("Invalid payment data received from server");
+      }
+      const razorpayOrder = data?.data?.order;
       const options = {
         key: "rzp_test_78N43t3YczV2lT",
         amount: razorpayOrder.amount,
@@ -267,7 +261,7 @@ const Page = () => {
         name: "Suha",
         description: "Book Purchase",
         order_id: razorpayOrder.id,
-        handler: async (response: RazorpayResponse) => {
+        handler: async function (response: RazorpayResponse) {
           try {
             const result = await createOrUpdateOrder({
               orderId,
@@ -284,22 +278,23 @@ const Page = () => {
               dispatch(resetCheckout());
               router.push(`/checkout/payment-success?orderId=${orderId}`);
             }
-          } catch {
+          } catch (error) {
             toast.error("Payment succeeded but failed to update order");
           }
         },
       };
 
-      new window.Razorpay(options).open();
-    } catch {
-      toast.error("Failed to initiate payment");
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      console.error("Payment initiation error:", error);
+      toast.error("Failed to initiate payment. Please try again");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Handle empty states
-  if (!user)
+  if (!user) {
     return (
       <NoData
         message="Please log in to access"
@@ -309,19 +304,22 @@ const Page = () => {
         onClick={handleOpenLogin}
       />
     );
-
-  if (cart.items.length === 0)
+  }
+  if (cart.items.length === 0) {
     return (
       <NoData
         message="Your Cart is Empty"
-        description="Looks like you haven't added any item yet. Explore our collection"
+        description="Looks like you haven't added any item yet. explore our collection"
         buttonText="Browse"
         imageUrl="/images/cart.png"
         onClick={() => router.push("/products")}
       />
     );
+  }
 
-  if (isCartLoading) return <Spinner />;
+  if (isCartLoading) {
+    return <Spinner />;
+  }
 
   return (
     <>
@@ -334,36 +332,60 @@ const Page = () => {
           <div className="container mx-auto flex items-center ">
             <ShoppingCart className="h-6 w-6 mr-2 text-gray-600" />
             <span className="text-lg font-semibold text-gray-800">
-              {cart.items.length} {cart.items.length === 1 ? "Item" : "Items"} in
-              your cart
+              {cart.items.length}
+              {cart.items.length === 1 ? " Item" : " Items"} in your cart
             </span>
           </div>
         </div>
         <div className="container mx-auto px-4 max-w-6xl">
-          {/* Checkout Steps */}
-          <div className="mb-8 flex items-center justify-center gap-4">
-            {["cart", "address", "payment"].map((s, idx) => (
-              <React.Fragment key={s}>
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`rounded-full p-3 ${step === s
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 text-gray-600"
-                      }`}
-                  >
-                    {s === "cart" && <ShoppingCart className="h-6 w-6" />}
-                    {s === "address" && <MapPin className="h-6 w-6" />}
-                    {s === "payment" && <CreditCard className="h-6 w-6" />}
-                  </div>
-                  <span className="font-medium hidden md:inline">
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
-                  </span>
+          <div className="mb-8">
+            <div className="flex items-center justify-center gap-4">
+              {/* Cart Step */}
+              <div className="flex items-center gap-2">
+                <div
+                  className={`rounded-full p-3 ${step === "cart"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200 text-gray-600"
+                    }`}
+                >
+                  <ShoppingCart className="h-6 w-6" />
                 </div>
-                {idx < 2 && <ChevronRight className="h-5 w-5 text-gray-400" />}
-              </React.Fragment>
-            ))}
-          </div>
+                <span className="font-medium hidden md:inline">Cart</span>
+              </div>
 
+              {/* Chevron */}
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+
+              {/* Address Step */}
+              <div className="flex items-center gap-2">
+                <div
+                  className={`rounded-full p-3 ${step === "address"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200 text-gray-600"
+                    }`}
+                >
+                  <MapPin className="h-6 w-6" />
+                </div>
+                <span className="font-medium hidden md:inline">Address</span>
+              </div>
+
+              {/* Chevron */}
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+
+              {/* Payment Step */}
+              <div className="flex items-center gap-2">
+                <div
+                  className={`rounded-full p-3 ${step === "payment"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200 text-gray-600"
+                    }`}
+                >
+                  <CreditCard className="h-6 w-6" />
+                </div>
+                <span className="font-medium hidden md:inline">Payment</span>
+              </div>
+            </div>
+          </div>
           <div className="grid gap-8 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <Card className="shadow-lg">
@@ -376,14 +398,13 @@ const Page = () => {
                     items={cart.items}
                     onRemoveItem={handleRemoveItem}
                     onToggleWishlist={handleAddToWishlist}
-                    onUpdateQuantity={handleUpdateQuantity}
+                    onUpdateQuantity={handleUpdateQuantity} // ✅ Pass this
                     wishlist={wishlist}
                   />
                 </CardContent>
               </Card>
             </div>
-
-            <div>
+            <div className="">
               <PriceDetails
                 totalOriginalAmount={totalOriginalAmount}
                 totalAmount={finalAmount}
@@ -399,7 +420,6 @@ const Page = () => {
                   )
                 }
               />
-
               {selectedAddress && (
                 <Card className="mt-6 mb-6 shadow-lg">
                   <CardHeader>
@@ -409,13 +429,13 @@ const Page = () => {
                     <div className="space-y-1">
                       <p>{selectedAddress?.state}</p>
                       {selectedAddress?.addressLine2 && (
-                        <p>{selectedAddress.addressLine2}</p>
+                        <p>{selectedAddress?.addressLine2}</p>
                       )}
                       <p>
-                        {selectedAddress?.city}, {selectedAddress?.state}{" "}
+                        {selectedAddress?.city},{selectedAddress.state}{" "}
                         {selectedAddress?.pin}
                       </p>
-                      <p>{selectedAddress?.phoneNumber}</p>
+                      <p>{selectedAddress.phoneNumber}</p>
                     </div>
                     <Button
                       className="mt-4"
@@ -429,7 +449,6 @@ const Page = () => {
               )}
             </div>
           </div>
-
           <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
