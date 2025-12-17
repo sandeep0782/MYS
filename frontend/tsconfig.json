@@ -28,6 +28,6 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/app/checkout/cart/page-1"
-  ],
+, "next.config.mjs"  ],
   "exclude": ["node_modules"]
 }
