@@ -29,7 +29,9 @@ const page = () => {
     const router = useRouter()
     const [selectedSize, setSelectedSize] = useState<string | null>(null)
     const [isAddtoCart, setIsAddtoCart] = useState(false)
-    const { data: apiResponse = {}, isLoading, isError } = useGetProductBySlugQuery(slug)
+    const { data: apiResponse = {}, isLoading, isError } = useGetProductBySlugQuery(
+        Array.isArray(slug) ? slug[0] : slug || ''
+    )
     const [product, setProduct] = useState<ProductDetails | null>(null)
     const [addToCartMutation] = useAddToCartMutation()
     const [addToWishlistMutation] = useAddToWishlistMutation()
@@ -157,7 +159,7 @@ const page = () => {
                         {productImages.map((image, index) => (
                             <div key={index} className="relative w-full border overflow-hidden bg-white aspect-3/4">
                                 <Image
-                                    src={image}
+                                    src={image as unknown as string}
                                     alt={`${product.name} ${index + 1}`}
                                     fill
                                     className="fill w-full h-full transition-transform duration-300 ease-in hover:scale-105"
@@ -214,11 +216,11 @@ const page = () => {
                             </div>
 
                             <div className="flex flex-wrap gap-3 mb-6">
-                                {product.sizes?.map((item) => {
+                                {product.sizes?.map((item, index) => {
                                     const isOutOfStock = item.stock === 0;
                                     return (
                                         <button
-                                            key={item._id}
+                                            key={index}
                                             onClick={() => !isOutOfStock && setSelectedSize(item.size)}
                                             disabled={isOutOfStock}
                                             className={`relative px-3 py-1 border rounded cursor-pointer transition-colors duration-300 ${selectedSize === item.size ? "bg-green-700 text-white" : "hover:bg-gray-100"}${isOutOfStock ? "opacity-50 cursor-not-allowed" : ""}`}

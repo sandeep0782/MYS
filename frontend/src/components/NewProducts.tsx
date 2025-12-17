@@ -107,7 +107,7 @@ const NewProducts = () => {
                                   <div className="relative w-full aspect-3/4 bg-gray-100 overflow-hidden">
                                     <Link href={`/products/${product.slug}`} className="block w-full h-full">
                                       <Image
-                                        src={product.images[0]}
+                                        src={product.images[0] as unknown as string}
                                         alt={product.name}
                                         fill
                                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"

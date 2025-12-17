@@ -84,7 +84,7 @@ const Products = () => {
 
         const categoryMatch =
             selectedCategory.length === 0 ||
-            (product.category ? selectedCategory.includes(product.category) : false);
+            (product.category ? selectedCategory.includes(product.category._id) : false);
 
         const normalizedSearch = searchTerms?.toLowerCase() || "";
 
@@ -244,7 +244,7 @@ const Products = () => {
                                                                 rel="noopener noreferrer"
                                                             >
                                                                 <Image
-                                                                    src={product.images[0]}
+                                                                    src={product.images[0] as unknown as string}
                                                                     alt={product.name}
                                                                     fill
                                                                     className="absolute top-0 left-0 w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"

@@ -43,11 +43,12 @@ const page = () => {
 
     const { data: categoryResponse } = useGetCategoriesQuery({});
     const category = categoryResponse?.data || [];
+
     const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files
         if (files && files.length > 0) {
             const newFiles = Array.from(files)
-            const currentFiles = watch('images') || []
+            const currentFiles = (watch('images') as unknown as File[]) || []
             setUploadImages((prevImages) =>
                 [...prevImages, ...newFiles.map((file) => URL.createObjectURL(file))].slice(0, 6)
             );
@@ -59,23 +60,24 @@ const page = () => {
         }
     }
     const removeImage = (index: number) => {
-        setUploadImages((prev) => prev.filter((_, i) => i !== index))
-        const currentFiles = watch('images') || []
-        const uploadFiles = currentFiles.filter((_, i) => i !== index)
-        setValue('images', uploadFiles)
-    }
+        setUploadImages((prev) => prev.filter((_, i) => i !== index));
+
+        const currentFiles = (watch('images') as File[]) || [];
+        const uploadFiles = currentFiles.filter((_, i) => i !== index);
+
+        setValue('images', uploadFiles);
+    };
     const handleOnSubmit = async (data: ProductDetails) => {
         try {
             const formData = new FormData();
 
             Object.entries(data).forEach(([key, value]) => {
-                if (key === "images") return;
-
-                // Skip stringify for sizes
-                if (key === "sizes") return;
+                // Skip complex types that we handle separately
+                if (key === "images" || key === "sizes") return;
 
                 if (value !== undefined && value !== null) {
-                    formData.append(key, value.toString());
+                    // Ensure we only append strings or blobs
+                    formData.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
                 }
             });
 
@@ -388,8 +390,12 @@ const page = () => {
                                                 <button
                                                     type="button"
                                                     onClick={() => {
-                                                        const updated = (watch("sizes") || []).filter((_, i) => i !== index);
-                                                        setValue("sizes", updated);
+                                                        const currentValues = watch("sizes");
+                                                        if (Array.isArray(currentValues)) {
+                                                            // Explicitly type 'i' as number
+                                                            const updated = currentValues.filter((_, i: number) => i !== index);
+                                                            setValue("sizes", updated);
+                                                        }
                                                     }}
                                                     className="text-red-500 font-bold"
                                                 >
@@ -484,7 +490,7 @@ const page = () => {
 
                                                         <div className="w-full h-32 rounded-lg overflow-hidden border border-gray-200">
                                                             <Image
-                                                                src={image}
+                                                                src={image as string}
                                                                 alt={`uploaded-image-${index + 1}`}
                                                                 fill
                                                                 className="object-cover"

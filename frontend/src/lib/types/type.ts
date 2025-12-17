@@ -10,13 +10,12 @@ export interface ProductDetails {
   stock?: number;
   stockStatus?: "in-stock" | "out-of-stock" | "preorder";
   backorder?: boolean;
-  sizes?: string;
-  colors?: Color;
-  images: string[];
+  sizes: { size: string; stock: number }[];
+  images: File[];
   video?: string;
-  category?: string;
+  category: { _id: string; name: string };
   tags?: string[];
-  brand?: Brand;
+  brand: { _id: string; name: string };
   collections?: Collections;
   ratings?: number;
   reviews?: Reviews;
@@ -27,6 +26,11 @@ export interface ProductDetails {
   isActive?: boolean;
   isDeleted?: boolean;
   material?: string;
+  colors?: {
+    _id: string;
+    name: string;
+    hexCode?: string;
+  };
   careInstructions?: string;
   gender?: "Men" | "Women" | "Unisex" | "Boys" | "Girls";
   season?: string;
@@ -68,7 +72,7 @@ export interface Address {
 export interface Product {
   _id: string;
   images: string[];
-  title: string;
+  name: string;
   price: number;
   finalPrice: number;
   shippingCharges: string;

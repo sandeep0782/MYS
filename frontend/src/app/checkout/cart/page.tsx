@@ -61,8 +61,9 @@ const Page = () => {
   const { orderId, step } = useSelector((state: RootState) => state.checkout);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const { data: cartData, isLoading: isCartLoading } = useGetCartQuery({}, { skip: true });
-  const [removeCartMutation] = useRemoveFromCartMutation();
+  const { data: cartData, isLoading: isCartLoading } = useGetCartQuery(user?._id as string, {
+    skip: !user?._id
+  }); const [removeCartMutation] = useRemoveFromCartMutation();
   const [addToWishlistMutation] = useAddToWishlistMutation();
   const [removeFromWishlistMutation] = useRemoveFromWishlistMutation();
   const wishlist = useSelector((state: RootState) => state.wishlist.items);

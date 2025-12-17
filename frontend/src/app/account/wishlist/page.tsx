@@ -7,7 +7,6 @@ import Spinner from '@/lib/Spinner';
 import { ProductDetails } from '@/lib/types/type';
 import { useAddToCartMutation } from '@/store/cartApi';
 import { useGetWishlistQuery, useRemoveFromWishlistMutation } from '@/store/wishlistApi';
-import { addToCart } from '@/store/slice/cartSlice';
 import { removedFromWishlistAction } from '@/store/slice/wishlistSlice';
 import { RootState } from '@/store/store';
 import { Check, Heart, Loader2, ShoppingCart, Trash, Trash2 } from 'lucide-react';
@@ -16,6 +15,7 @@ import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
+import { addToCart, setCart } from '@/store/slice/cartSlice';
 
 const page = () => {
 
@@ -26,8 +26,10 @@ const page = () => {
   const [removeFromWishlistMutation] = useRemoveFromWishlistMutation();
   const [isAddToCart, setIsAddToCart] = useState(false);
   const cart = useSelector((state: RootState) => state.cart.items);
-  const { data: wishlistData, isLoading } = useGetWishlistQuery({})
-  const [wishlistItems, setWishlistItems] = useState<ProductDetails[]>([])
+  const userId = useSelector((state: RootState) => state.user.user);
+  const { data: wishlistData, isLoading } = useGetWishlistQuery(userId!, {
+    skip: !userId, // skip if userId is undefined
+  }); const [wishlistItems, setWishlistItems] = useState<ProductDetails[]>([])
 
   console.log(wishlistData)
   useEffect(() => {
@@ -69,7 +71,7 @@ const page = () => {
   const handleRemoveItem = async (productId: string) => {
 
     try {
-      const result = await removeCartMutation(productId).unwrap();
+      const result = await removeFromWishlistMutation(productId).unwrap();
       if (result.success && result.data) {
         dispatch(setCart(result.data))
         // dispatch(resetCheckout())
@@ -128,13 +130,13 @@ const page = () => {
         {wishlistItems.map((item) => (
           <Card key={item._id}>
             <CardHeader>
-              <CardTitle>{item.title}</CardTitle>
+              <CardTitle>{item.name}</CardTitle>
               <CardDescription>₹ {item.finalPrice.toFixed(2)}</CardDescription>
             </CardHeader>
             <CardContent>
               <img className='aspect-square w-full object-cover'
-                src={item.images[0]}
-                alt={item.title}
+                src={item.images[0] as unknown as string}
+                alt={item.name}
               />
             </CardContent>
             <CardFooter className='flex justify-between'>
