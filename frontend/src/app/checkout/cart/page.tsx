@@ -49,6 +49,11 @@ declare global {
   }
 }
 
+interface RazorpaySuccessResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
 const Page = () => {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -254,16 +259,16 @@ const Page = () => {
         // key: process.env.NEXT_PUBLIC_RAZORPAY_KEY,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
-        name: "Suha",
-        description: "Book Purchase",
+        name: "MYSMMEE",
+        description: "ECOM SERVICES",
         order_id: razorpayOrder.id,
-        handler: async function (response: any) {
+        handler: async function (response: RazorpaySuccessResponse) {
           try {
             const result = await createOrUpdateOrder({
               // updates: {
               orderId,
               paymentDetails: {
-                razorpay_order_id: response.order_id,
+                razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
               },
