@@ -1,6 +1,6 @@
-import { ObjectId } from "mongodb"; // or from "mongoose"
+import { ObjectId } from "mongodb";
 
-interface IUser {
+export interface IUser {
   _id: ObjectId;
   email: string;
   name?: string;
@@ -8,9 +8,12 @@ interface IUser {
 
 declare global {
   namespace Express {
+    // ✅ extend passport's User
+    interface User extends IUser {}
+
+    // ✅ you CAN safely add new properties here
     interface Request {
       id?: string;
-      user?: IUser;
     }
   }
 }

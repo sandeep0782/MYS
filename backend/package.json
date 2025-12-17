@@ -4,7 +4,8 @@
   "main": "index.ts",
   "scripts": {
     "dev": "nodemon --watch './**/*.ts' --exec 'ts-node --files' index.ts",
-    "start": "nodemon dist/index.ts",
+    "start": "node dist/index.ts",
+    "build":"tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
