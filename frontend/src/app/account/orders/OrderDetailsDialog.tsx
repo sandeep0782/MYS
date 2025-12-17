@@ -1,56 +1,91 @@
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Order } from '@/lib/types/type'
-import { CheckCircle, Eye, Package, Truck, XCircle } from 'lucide-react'
-import Image from 'next/image'
-import React from 'react'
+"use client";
+
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { CheckCircle, Eye, Package, Truck, XCircle } from "lucide-react";
+import Image from "next/image";
+import React from "react";
+import { Address } from "@/lib/types/type";
+
+// Correct type for PaymentDetails
+export interface PaymentDetails {
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+}
+
+// Correct Order type
+export interface Order {
+    _id: string;
+    items: {
+        product: {
+            name: string;
+            description?: string;
+            shortDescription?: string;
+            images?: string[];
+        };
+        quantity: number;
+    }[];
+    totalAmount: number;
+    shippingAddress?: Address;
+    paymentDetails?: PaymentDetails;
+    status?: "processing" | "shipped" | "delivered" | "cancelled";
+}
 
 interface OrderDetailsDialogProps {
-    order: Order
+    order: Order;
 }
 
 interface StatusStepProps {
-    title: string
-    icon: React.ReactNode
-    isCompleted: boolean
-    isActive: boolean
-    
+    title: string;
+    icon: React.ReactNode;
+    isCompleted: boolean;
+    isActive: boolean;
 }
 
 const StatusStep = ({ title, icon, isCompleted, isActive }: StatusStepProps) => (
     <div
-        className={`flex flex-col items-center ${isCompleted ? 'text-green-500' : isActive ? 'text-blue-500' : 'text-gray-400'
+        className={`flex flex-col items-center ${isCompleted ? "text-green-500" : isActive ? "text-blue-500" : "text-gray-400"
             }`}
     >
         <div
-            className={`rounded-full p-2 ${isCompleted ? 'bg-green-100' : isActive ? 'bg-blue-100' : 'bg-gray-100'
+            className={`rounded-full p-2 ${isCompleted ? "bg-green-100" : isActive ? "bg-blue-100" : "bg-gray-100"
                 }`}
         >
             {icon}
         </div>
         <span className="text-xs mt-1 capitalize">{title}</span>
     </div>
-)
+);
 
 const OrderDetailsDialog = ({ order }: OrderDetailsDialogProps) => {
-    const getStatusIndex = (status: string) => {
-        const statuses = ['processing', 'shipped', 'delivered', 'cancelled']
-        return statuses.indexOf(status)
-    }
+    const getStatusIndex = (status?: string) => {
+        const statuses = ["processing", "shipped", "delivered", "cancelled"];
+        return status ? statuses.indexOf(status) : -1;
+    };
 
-    const statusIndex = getStatusIndex(order?.status)
+    const statusIndex = getStatusIndex(order?.status);
 
     return (
         <Dialog>
             <DialogTrigger asChild>
                 <Button variant="ghost" size="sm">
                     <Eye className="w-4 h-4 mr-2" />
-                    Check Status 
+                    Check Status
                 </Button>
             </DialogTrigger>
+
             <DialogContent className="sm:max-w-[600px] max-h-[800px] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold text-purple-700">Order Details</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold text-purple-700">
+                        Order Details
+                    </DialogTitle>
                 </DialogHeader>
 
                 <div className="space-y-6">
@@ -64,7 +99,7 @@ const OrderDetailsDialog = ({ order }: OrderDetailsDialogProps) => {
                                 isCompleted={statusIndex > 0}
                                 isActive={statusIndex === 0}
                             />
-                            <div className={`h-1 flex-1 ${statusIndex > 0 ? 'bg-green-500' : 'bg-gray-300'}`} />
+                            <div className={`h-1 flex-1 ${statusIndex > 0 ? "bg-green-500" : "bg-gray-300"}`} />
 
                             <StatusStep
                                 title="shipped"
@@ -72,7 +107,7 @@ const OrderDetailsDialog = ({ order }: OrderDetailsDialogProps) => {
                                 isCompleted={statusIndex > 1}
                                 isActive={statusIndex === 1}
                             />
-                            <div className={`h-1 flex-1 ${statusIndex > 1 ? 'bg-green-500' : 'bg-gray-300'}`} />
+                            <div className={`h-1 flex-1 ${statusIndex > 1 ? "bg-green-500" : "bg-gray-300"}`} />
 
                             <StatusStep
                                 title="delivered"
@@ -81,7 +116,7 @@ const OrderDetailsDialog = ({ order }: OrderDetailsDialogProps) => {
                                 isActive={statusIndex === 2}
                             />
 
-                            {order?.status === 'cancelled' && (
+                            {order?.status === "cancelled" && (
                                 <>
                                     <div className="h-1 flex-1 bg-red-500" />
                                     <StatusStep
@@ -102,8 +137,8 @@ const OrderDetailsDialog = ({ order }: OrderDetailsDialogProps) => {
                             {order?.items?.map((item, index) => (
                                 <div key={index} className="flex items-center space-x-4">
                                     <Image
-                                        src={item?.product?.images?.[0] || '/images/book-placeholder.png'}
-                                        alt={item?.product?.name || 'Book Image'}
+                                        src={item?.product?.images?.[0] || "/images/book-placeholder.png"}
+                                        alt={item?.product?.name || "Book Image"}
                                         height={60}
                                         width={60}
                                         className="rounded-md"
@@ -122,26 +157,30 @@ const OrderDetailsDialog = ({ order }: OrderDetailsDialogProps) => {
                     </div>
 
                     {/* Shipping Address */}
-                    <div className="bg-linear-to-r from-green-100 to-teal-100 p-4 rounded-lg">
-                        <h3 className="font-serif text-lg text-green-800 mb-2">Shipping Address</h3>
-                        <p>{order?.shippingAddress?.addressLine1}</p>
-                        <p>
-                            {order?.shippingAddress?.city}, {order?.shippingAddress?.state} -{' '}
-                            {order?.shippingAddress?.pin}
-                        </p>
-                    </div>
+                    {order?.shippingAddress && (
+                        <div className="bg-linear-to-r from-green-100 to-teal-100 p-4 rounded-lg">
+                            <h3 className="font-serif text-lg text-green-800 mb-2">Shipping Address</h3>
+                            <p>{order.shippingAddress.addressLine1}</p>
+                            <p>
+                                {order.shippingAddress.city}, {order.shippingAddress.state} -{" "}
+                                {order.shippingAddress.pin}
+                            </p>
+                        </div>
+                    )}
 
                     {/* Payment Details */}
-                    <div className="bg-linear-to-r from-yellow-100 to-orange-100 p-4 rounded-lg">
-                        <h3 className="font-serif text-lg text-orange-800 mb-2">Payment Details</h3>
-                        <p>Order ID: {order?.paymentDetails?.razorpay_order_id}</p>
-                        <p>Payment ID: {order?.paymentDetails?.razorpay_payment_id}</p>
-                        <p>Amount: ₹{order?.totalAmount}</p>
-                    </div>
+                    {order?.paymentDetails && (
+                        <div className="bg-linear-to-r from-yellow-100 to-orange-100 p-4 rounded-lg">
+                            <h3 className="font-serif text-lg text-orange-800 mb-2">Payment Details</h3>
+                            <p>Order ID: {order.paymentDetails.razorpay_order_id}</p>
+                            <p>Payment ID: {order.paymentDetails.razorpay_payment_id}</p>
+                            <p>Amount: ₹{order.totalAmount}</p>
+                        </div>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>
-    )
-}
+    );
+};
 
-export default OrderDetailsDialog
+export default OrderDetailsDialog;
