@@ -13,25 +13,28 @@ import Image from "next/image";
 import React from "react";
 import { Address } from "@/lib/types/type";
 
-// Correct type for PaymentDetails
+// PaymentDetails type
 export interface PaymentDetails {
     razorpay_payment_id: string;
     razorpay_order_id: string;
     razorpay_signature: string;
 }
 
-// Correct Order type
+// OrderItem type
+export interface OrderItem {
+    product: {
+        name: string;
+        description?: string;
+        shortDescription?: string;
+        images?: string[];
+    };
+    quantity: number;
+}
+
+// Order type
 export interface Order {
     _id: string;
-    items: {
-        product: {
-            name: string;
-            description?: string;
-            shortDescription?: string;
-            images?: string[];
-        };
-        quantity: number;
-    }[];
+    items: OrderItem[];
     totalAmount: number;
     shippingAddress?: Address;
     paymentDetails?: PaymentDetails;

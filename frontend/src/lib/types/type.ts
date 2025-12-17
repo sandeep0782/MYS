@@ -95,7 +95,7 @@ export interface Order {
   shippingAddress: Address;
   paymentStatus: string;
   paymentMethod: string;
-  paymentDetails: string;
+  paymentDetails: PaymentDetails; // ✅ fix here
   status: string;
   createdAt: Date;
 }
@@ -120,4 +120,10 @@ export interface Brand {
 export interface BrandsResponse {
   success: boolean;
   data: Brand[];
+}
+
+export interface PaymentDetails {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
 }
