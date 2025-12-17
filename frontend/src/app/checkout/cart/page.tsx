@@ -90,6 +90,7 @@ const Page = () => {
   const { orderId, step } = useSelector((state: RootState) => state.checkout);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
   const { data: cartData, isLoading: isCartLoading } = useGetCartQuery(
     {},
     { skip: true }
@@ -100,23 +101,31 @@ const Page = () => {
   const wishlist = useSelector((state: RootState) => state.wishlist.items);
   const cart = useSelector((state: RootState) => state.cart);
   const [createOrUpdateOrder] = useCreateOrUpdateOrderMutation();
-  const { data: orderData } = useGetOrderByIdQuery(orderId || "");
   const [createRazorpayPayment] = useCreateRazorpayPaymentMutation();
-  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [addToCart] = useAddToCartMutation();
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
 
+  const { data: orderData } = useGetOrderByIdQuery<{ success: boolean; data: Order }>(
+    orderId || "",
+    { skip: !orderId }
+  );
+  const order: Order | undefined = orderData?.data;
+
+  // Update selected address from order
   useEffect(() => {
-    if (orderData?.shippingAddress) {
-      setSelectedAddress(orderData.shippingAddress);
+    if (order?.shippingAddress) {
+      setSelectedAddress(order.shippingAddress);
     }
-  }, [orderData]);
+  }, [order]);
 
+  // Show address dialog if step is "address" but no selectedAddress
   useEffect(() => {
     if (step === "address" && !selectedAddress) {
       setShowAddressDialog(true);
     }
   }, [step, selectedAddress]);
 
+  // Set cart from fetched data
   useEffect(() => {
     if (cartData?.success && cartData?.data) {
       dispatch(setCart(cartData.data));
@@ -202,7 +211,7 @@ const Page = () => {
   const maximumShippingCharges = Math.max(...shippingCharge, 0);
   const finalAmount = totalAmount + maximumShippingCharges;
 
-  // Checkout steps
+  // Proceed to next step
   const handleProceedToCheckout = async () => {
     if (step === "cart") {
       try {
@@ -231,7 +240,7 @@ const Page = () => {
     setShowAddressDialog(false);
     if (orderId) {
       try {
-        await createOrUpdateOrder({ orderId, shippingAddress: address }).unwrap();
+        await createOrUpdateOrder({ orderId, shippingAddress: address._id }).unwrap();
         toast.success("Address updated successfully");
       } catch {
         toast.error("Failed to update address");
@@ -289,6 +298,7 @@ const Page = () => {
     }
   };
 
+  // Handle empty states
   if (!user)
     return (
       <NoData
@@ -304,7 +314,7 @@ const Page = () => {
     return (
       <NoData
         message="Your Cart is Empty"
-        description="Looks like you haven't added any item yet. explore our collection"
+        description="Looks like you haven't added any item yet. Explore our collection"
         buttonText="Browse"
         imageUrl="/images/cart.png"
         onClick={() => router.push("/products")}
@@ -336,7 +346,9 @@ const Page = () => {
               <React.Fragment key={s}>
                 <div className="flex items-center gap-2">
                   <div
-                    className={`rounded-full p-3 ${step === s ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
+                    className={`rounded-full p-3 ${step === s
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 text-gray-600"
                       }`}
                   >
                     {s === "cart" && <ShoppingCart className="h-6 w-6" />}
@@ -382,7 +394,9 @@ const Page = () => {
                 step={step}
                 onProceed={handleProceedToCheckout}
                 onBack={() =>
-                  dispatch(setCheckoutStep(step === "address" ? "cart" : "address"))
+                  dispatch(
+                    setCheckoutStep(step === "address" ? "cart" : "address")
+                  )
                 }
               />
 
@@ -395,13 +409,13 @@ const Page = () => {
                     <div className="space-y-1">
                       <p>{selectedAddress?.state}</p>
                       {selectedAddress?.addressLine2 && (
-                        <p>{selectedAddress?.addressLine2}</p>
+                        <p>{selectedAddress.addressLine2}</p>
                       )}
                       <p>
-                        {selectedAddress?.city}, {selectedAddress.state}{" "}
+                        {selectedAddress?.city}, {selectedAddress?.state}{" "}
                         {selectedAddress?.pin}
                       </p>
-                      <p>{selectedAddress.phoneNumber}</p>
+                      <p>{selectedAddress?.phoneNumber}</p>
                     </div>
                     <Button
                       className="mt-4"
