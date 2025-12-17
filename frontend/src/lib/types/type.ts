@@ -76,6 +76,8 @@ export interface Product {
   price: number;
   finalPrice: number;
   shippingCharges: string;
+  description?: string;
+  shortDescription?: string;
 }
 export interface CartItem {
   _id: string;
@@ -84,7 +86,7 @@ export interface CartItem {
 }
 export interface OrderItem {
   _id: string;
-  product: ProductDetails;
+  product: Product;
   quantity: number;
 }
 export interface PaymentDetails {
@@ -93,6 +95,7 @@ export interface PaymentDetails {
   razorpay_signature: string;
 }
 export interface Order {
+  _id: string;
   user: UserData;
   items: OrderItem[];
   totalAmount: number;
