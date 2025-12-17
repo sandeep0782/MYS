@@ -49,7 +49,7 @@ declare global {
   }
 }
 
-interface RazorpaySuccessResponse {
+interface RazorpayResponse {
   razorpay_payment_id: string;
   razorpay_order_id: string;
   razorpay_signature: string;
@@ -256,16 +256,14 @@ const Page = () => {
       const razorpayOrder = data?.data?.order;
       const options = {
         key: "rzp_test_78N43t3YczV2lT",
-        // key: process.env.NEXT_PUBLIC_RAZORPAY_KEY,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
-        name: "MYSMMEE",
-        description: "ECOM SERVICES",
+        name: "Suha",
+        description: "Book Purchase",
         order_id: razorpayOrder.id,
-        handler: async function (response: RazorpaySuccessResponse) {
+        handler: async function (response: RazorpayResponse) {
           try {
             const result = await createOrUpdateOrder({
-              // updates: {
               orderId,
               paymentDetails: {
                 razorpay_order_id: response.razorpay_order_id,
@@ -273,36 +271,19 @@ const Page = () => {
                 razorpay_signature: response.razorpay_signature,
               },
               paymentStatus: "complete",
-
-              // },
             }).unwrap();
 
             if (result.success) {
               dispatch(clearCart());
               dispatch(resetCheckout());
-              dispatch(cartApi.util.resetApiState());     // clear RTK Query cache
-
-              await persistor.flush(); // Wait for any pending writes to complete
-
-              toast.success("Payment Successfull !");
               router.push(`/checkout/payment-success?orderId=${orderId}`);
-            } else {
-              throw new Error(result.message);
             }
           } catch (error) {
-            console.log("failed to update order", error);
-            toast.error("payment Successfull but failed to update order");
+            toast.error("Payment succeeded but failed to update order");
           }
         },
-        prefill: {
-          name: orderData?.data?.user?.name,
-          email: orderData?.data?.user?.email,
-          contact: orderData?.data?.user?.phoneNumber,
-        },
-        theme: {
-          color: "#3399cc",
-        },
       };
+
       const razorpay = new window.Razorpay(options);
       razorpay.open();
     } catch (error) {
