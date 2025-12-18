@@ -1,4 +1,5 @@
 'use client'
+
 import NoData from '@/components/NoData'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
@@ -153,7 +154,8 @@ const page = () => {
                     </Link>
                 </div>
 
-                <form onSubmit={handleSubmit(handleOnSubmit)} className="space-y-8">
+                {/* <form onSubmit={handleSubmit(handleOnSubmit)} className="space-y-8"> */}
+                <form onSubmit={handleSubmit(handleOnSubmit, (errors) => console.log("Form Errors:", errors))} className="space-y-8">
                     <Card className="shadow-lg border-t-4 border-t-blue-500">
                         <CardHeader>
                             <CardTitle className="text-2xl text-blue-700 flex items-center">
@@ -262,8 +264,8 @@ const page = () => {
                                         )}
                                     />
 
-                                    {errors.category && (
-                                        <p className="text-red-500 text-sm mt-1">{errors.category.message}</p>
+                                    {errors.brand && ( // Changed from errors.category
+                                        <p className="text-red-500 text-sm mt-1">{errors.brand.message}</p>
                                     )}
                                 </div>
                             </div>
@@ -498,6 +500,7 @@ const page = () => {
                                                         </div>
 
                                                         <Button
+                                                            type="button"
                                                             onClick={() => removeImage(index)}
                                                             size='icon'
                                                             className='absolute -right-2 -top-2 rounded-full'
@@ -796,32 +799,27 @@ const page = () => {
                             </Accordion>
                         </CardContent>
                     </Card>
-                    <Button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-60 text-md bg-blue-600 text-white hover:bg-blue-800 font-semibold rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
-                    >
-                        {isLoading ? (
-                            <>
-                                <Loader2 className="animate-spin mr-2" size={20} />
-                                Saving...
-                            </>
-                        ) : (
-                            "Post your Products"
-                        )}
-                    </Button>
 
-                    <p className='text-sm text-center mt-2 text-gray-600'>
-                        By clicking "Post your Products", you agree to our{" "}
-                        <Link href='/terms-of-use' className=' text-blue-500 hover:underline'>Terms of Use</Link>,{" "} and {" "}
-                        <Link href='/privacy-policy' className=' text-blue-500 hover:underline'>Privacy Policy</Link>
-
-                    </p>
+                    {/* Submit Button Section */}
+                    <div className="flex justify-end pt-4 pb-10">
+                        <Button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full md:w-64 bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                    Listing Product...
+                                </>
+                            ) : (
+                                "List Product"
+                            )}
+                        </Button>
+                    </div>
                 </form>
-
             </div>
-        </div >
-
+        </div>
     )
 }
 
